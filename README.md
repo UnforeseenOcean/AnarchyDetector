@@ -1,6 +1,8 @@
 # AnarchyDetector
 AutoHotKey program that detects (probably) 99% of AnarchyGrabber malware
 
+![IMG1632246915](https://user-images.githubusercontent.com/11834016/134222685-c565e242-daae-4907-9979-f97d06fd04c0.png)
+
 
 Please read the following thoroughly.
 
