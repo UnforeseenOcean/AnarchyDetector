@@ -5,8 +5,10 @@ UNSURE: What this program found was either there was a folder for AnarchyGrabber
 YES: The program found both the folder for AnarchyGrabber and found out that index.js was tampered with.
 
 The SHA-1 checksum of the files are as follows (Do not use them if it doesn't match)
-AnarchyDetect.ahk: 7F4B3466FB9311C490F78F9D2371AA3CB5205DD5
-AnarchyDetect.exe: 8432D21FB48D806B6F9889CD0451F3950717B85D
+AnarchyDetect.ahk: 8A4DCAF2066E4DE606CFF1D74D3ED490EA5D15D4
+AnarchyDetect.exe: E895C3A8C0EE99F1ACE92AA79448836A08695E7B
+
+Version 1.5
 
 To verify:
 Install 7-zip.

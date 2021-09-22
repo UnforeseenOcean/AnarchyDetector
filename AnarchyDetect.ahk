@@ -3,6 +3,14 @@
 #SingleInstance Force
 SetWorkingDir %A_ScriptDir%
 
+AnarchyAlert := "Not Found"
+AnarchyBody := "Not Found"
+AnarchyInject := "Not Found"
+IndexAlert := "Normal"
+IndexSize := 0
+
+LogPath := A_ScriptDir "\Log-" A_YYYY "-" A_MM "-" A_DD "-" A_Hour "-" A_Min "-" A_Sec ".txt"
+
 Gui New, -MinimizeBox -MaximizeBox
 Gui Font, s20
 Gui Add, Text, x8 y8 w465 h38 +0x1 +0x200, Am I infected?
@@ -23,16 +31,27 @@ GuiClose:
 ; End of the GUI section
 
 GetPath:
+
+FileAppend, ========== LOG START ==========`n, %LogPath%
+FileAppend, Diagnosis started at %A_Now%`n, %LogPath%
+
 ; Get where the Discord is running from
 Process, Exist, discord.exe
+
 if (ErrorLevel != 0) {
-DiscordPath := GetModuleFileNameEx(ErrorLevel)
-GoSub, DetectAnarchy
-return
+	DiscordPath := GetModuleFileNameEx(ErrorLevel)
+	FileAppend, Discord Path: %DiscordPath%`n, %LogPath%
+	GoSub, DetectAnarchy
+	return
 }
-else MsgBox, 16, Error, Discord is not running. Please unplug the network cable or disconnect Wi-Fi, then start Discord.`nThis program cannot get a path to the correct file without it.`n`nIf your client is infected and you don't disconnect the network`, it may steal your account info.
-ExitApp
-Return
+else {
+	FileAppend, Program failed to detect Discord directory. Exiting.`n, %LogPath%
+	FileAppend, ========== LOG END ==========`n, %LogPath%
+	MsgBox, 16, Error, Discord is not running. Please unplug the network cable or disconnect Wi-Fi, then start Discord.`nThis program cannot get a path to the correct file without it.`n`nIf your client is infected and you don't disconnect the network`, it may steal your account info.
+	ExitApp
+	Return
+}
+Return 
 
 DetectAnarchy:
 ; Get a path to the discord_desktop_core folder, which may have a number appended
@@ -40,24 +59,52 @@ SplitPath, DiscordPath,,DiscordDir
 Loop, Files, %DiscordDir%\modules\discord_desktop_core*.*, D	
 	tmpQ := A_LoopFileName
 ModulePath := DiscordDir "\modules\" tmpQ "\discord_desktop_core\"
+FileAppend, Module Folder Path: %ModulePath%`n`n, %LogPath%
+
+; Check for any other files in the module folder
+FileAppend, Module folder contains the following files.`n, %LogPath%
+FileAppend, The folder should only contain 3 files: core.asar`, index.js`, and package.json.`n`n, %LogPath%
+Loop, Files, %ModulePath%\*.*, FDR 
+{
+	CurrentFile := A_LoopFileName
+	FileAppend, %CurrentFile%`n, %LogPath%
+}
+
+FileAppend, `n, %LogPath%
+
 
 ; Check for "4n4rchy" folder, if it exists, set the flag
+FileAppend, Checking for "4n4archy" or "4n4rchy" folder...`n, %LogPath%
 AnarchyPath := ModulePath "\4n4rchy"
-if !FileExist(AnarchyPath) {
-	AnarchyFound := 0
+AnarchyPath2 := ModulePath "\4n4archy"
+if (FileExist(AnarchyPath)) || (FileExist(AnarchyPath2)) {
+	AnarchyFound := 1
+	AnarchyAlert := "DETECTED"
+	FileAppend, Warning! AnarchyGrabber folder(s) were found!`n`n, %LogPath%
 }
 else {
-	AnarchyFound := 1
+	FileAppend, Folders not found. Moving on.`n`n, %LogPath%
+	AnarchyFound := 0
 }
 
 ; Check for index.js tampering, it should be exactly 40 bytes long
 FileGetSize, IndexSize, %ModulePath%index.js
-if (IndexSize != 40) {
-IndexTampered := 1
-}
-else IndexTampered := 0
 
+FileAppend, index.js size: %IndexSize% bytes. It should be 40 bytes.`n, %LogPath%
+
+if (IndexSize != 40) {
+	IndexTampered := 1
+	IndexAlert := "TAMPERED"
+	FileAppend, Warning! index.js has been tampered with!`n, %LogPath%
+}
+else { 
+	IndexTampered := 0
+	FileAppend, index.js does not seem to be tampered with.`n`n, %LogPath%
+}
 ; We're done now, return the results
+
+FileAppend, ========== LOG END ==========`n, %LogPath%
+FileAppend, `n`n, %LogPath%
 GoSub, ShowResult
 return
 
@@ -67,6 +114,7 @@ ShowResult:
 if (AnarchyFound && IndexTampered){
 	GuiControl, +cFF0000, Result
 	GuiControl,, Result, YES
+	MsgBox, 16, Warning, Your Discord client has been infected with AnarchyGrabber.`nPlease uninstall Discord fully and reinstall it.`nDo not use a pre-downloaded installer. Go to the official site and redownload the installer.`nFor more information`, please refer to the log file: `n%LogPath%
 	return
 }
 
@@ -74,12 +122,14 @@ if (AnarchyFound && IndexTampered){
 if (!AnarchyFound && IndexTampered)||(AnarchyFound && !IndexTampered){
 	GuiControl, +cFFCC00, Result
 	GuiControl,, Result, UNSURE
+	MsgBox, 48, Alert, Your Discord client has been modified in some way.`nPlease refer to the log file: `n%LogPath%
 	return
 }
 ; If it has no indicators, change the text to NO
 else {
 	GuiControl, +c00CC00, Result
 	GuiControl,, Result, NO
+	MsgBox, 64, Alert, Your Discord client seems to be fine.`nFor more information, please refer to the log file: `n%LogPath%
 	return
 }
 
